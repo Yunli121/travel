@@ -3,27 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>澳洲打工度假檢查清單</title>
+    <title>澳洲打工度假清單</title>
     <style>
-        :root {
-            --primary-color: #f1c40f;
-            --bg-color: #f9f9f9;
-        }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; color: #333; }
+        :root { --primary-color: #f1c40f; --bg-color: #f4f7f6; --delete-color: #ff4757; }
+        body { font-family: -apple-system, system-ui, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; color: #333; line-height: 1.5; }
         .container { max-width: 500px; margin: 0 auto; }
-        h1 { text-align: center; color: #2c3e50; font-size: 1.5rem; }
-        .progress-container { background: #eee; border-radius: 10px; height: 10px; margin-bottom: 20px; overflow: hidden; }
+        h1 { text-align: center; color: #2c3e50; font-size: 1.4rem; margin-bottom: 5px; }
+        .progress-wrapper { background: white; padding: 15px; border-radius: 12px; position: sticky; top: 10px; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .progress-text { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 8px; font-weight: bold; }
+        .progress-container { background: #eee; border-radius: 10px; height: 10px; overflow: hidden; }
         #progress-bar { background: var(--primary-color); height: 100%; width: 0%; transition: width 0.3s; }
         .section { background: white; border-radius: 12px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .section-title { font-weight: bold; margin-bottom: 10px; color: #e67e22; border-bottom: 2px solid #fff5e6; padding-bottom: 5px; display: flex; align-items: center; }
-        .item { display: flex; align-items: center; margin: 10px 0; cursor: pointer; }
-        .item input[type="checkbox"] { width: 20px; height: 20px; margin-right: 12px; accent-color: var(--primary-color); }
-        .item span { font-size: 1rem; }
+        .section-title { font-weight: bold; margin-bottom: 12px; color: #e67e22; border-left: 4px solid var(--primary-color); padding-left: 10px; }
+        .item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #eee; }
+        .item-left { display: flex; align-items: center; flex: 1; cursor: pointer; }
+        .item input[type="checkbox"] { width: 22px; height: 22px; margin-right: 12px; accent-color: var(--primary-color); flex-shrink: 0; }
         .item.checked span { text-decoration: line-through; color: #aaa; }
-        .add-box { display: flex; margin-top: 10px; }
-        .add-box input { flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px 0 0 4px; outline: none; }
-        .add-box button { padding: 8px 15px; border: none; background: #3498db; color: white; border-radius: 0 4px 4px 0; cursor: pointer; }
-        .footer-note { font-size: 0.8rem; color: #999; text-align: center; margin-top: 30px; }
+        .btn-del { color: var(--delete-color); background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 5px 10px; opacity: 0.6; }
+        .btn-del:hover { opacity: 1; }
+        .add-box { display: flex; margin-top: 15px; gap: 5px; }
+        .add-box input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-size: 0.9rem; }
+        .add-box button { padding: 8px 15px; border: none; background: #3498db; color: white; border-radius: 8px; font-weight: bold; }
+        .reset-btn { display: block; width: 100%; padding: 10px; margin-top: 20px; background: #ddd; border: none; border-radius: 8px; color: #666; font-size: 0.8rem; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -31,84 +32,121 @@
 <div class="container">
     <h1>🇦🇺 澳洲行前 7 天檢查表 🇦🇺</h1>
     
-    <div class="progress-container">
-        <div id="progress-bar"></div>
+    <div class="progress-wrapper">
+        <div class="progress-text"><span>準備進度</span><span id="progress-percent">0%</span></div>
+        <div class="progress-container"><div id="progress-bar"></div></div>
     </div>
 
-    <div id="checklist-content">
-        </div>
+    <div id="checklist-content"></div>
 
-    <p class="footer-note">提示：你可以隨時檢視旅遊清單。</p>
+    <button class="reset-btn" onclick="resetAll()">重置清單（恢復預設值）</button>
 </div>
 
 <script>
-    const initialData = [
-        { title: "🗓️ 出發前 7 天｜文件一定要齊", items: ["護照 (效期6個月以上)", "打工度假簽證 (電子檔+截圖)", "機票電子檔", "旅遊保險 / 醫療保險", "證件掃描檔", "英文履歷 (PDF+Word)", "全部存雲端/隨身碟備份"] },
+    const defaultData = [
+        { title: "🗓️ 出發前 7 天｜文件一定要齊", items: ["護照 (效期6個月以上)", "打工度假簽證 (電子檔+截圖)", "機票電子檔", "旅遊保險 / 醫療保險", "證件掃描檔備份", "英文履歷 (PDF+Word)", "雲端/隨身碟備份"] },
         { title: "🗓️ 出發前 5 天｜3C & 筆電準備", items: ["筆電 (一定要)", "手機", "澳洲轉接頭 (I型)", "行動電源", "App: Gmail/Drive/Maps/Meet"] },
-        { title: "🗓️ 出發前 4 天｜錢 & 金融", items: ["信用卡 (海外刷卡開通)", "少量澳幣現金", "銀行 App 確認可用", "家人緊急聯絡人"] },
+        { title: "🗓️ 出發前 4 天｜錢 & 金融", items: ["信用卡 (海外刷卡)", "少量澳幣現金", "銀行 App 確認可用", "家人緊急聯絡人"] },
         { title: "🗓️ 出發前 3 天｜生活必備", items: ["轉接頭再檢查一次", "常用藥+英文說明", "隱形眼鏡/眼鏡備品", "個人重要私人物品"] },
-        { title: "🗓️ 出發前 2 天｜心理準備", items: ["和家人拍合照", "寫一句話給自己", "告訴自己：不適應是正常的"] },
-        { title: "🗓️ 出發前 1 天｜最後確認", items: ["行李重量 OK", "文件在隨身包", "手機筆電充滿電", "首晚住宿資訊截圖"] },
-        { title: "🌱 落地澳洲第一週", items: ["申請 TFN 稅號", "開銀行帳戶", "辦 SIM 卡", "開始找工作", "熟悉超市與交通"] }
+        { title: "🗓️ 出發前 2 天｜心理準備", items: ["和家人拍幾張合照", "寫一句想對自己說的話", "告訴自己：不適應是正常的"] },
+        { title: "🗓️ 出發前 1 天｜最後確認", items: ["行李重量 OK", "文件都在隨身包", "手機筆電充滿電", "首晚住宿資訊截圖"] },
+        { title: "🌱 落地澳洲第一週", items: ["申請 TFN 稅號", "開銀行帳戶", "辦 SIM 卡", "開始找工作", "熟悉附近超市 & 交通"] }
     ];
+
+    let currentData = JSON.parse(localStorage.getItem('au_checklist_data')) || defaultData;
+    let checkedStatus = JSON.parse(localStorage.getItem('au_checklist_status')) || {};
 
     function render() {
         const container = document.getElementById('checklist-content');
         container.innerHTML = '';
         
-        initialData.forEach((section, sIdx) => {
+        currentData.forEach((section, sIdx) => {
             const secDiv = document.createElement('div');
             secDiv.className = 'section';
             secDiv.innerHTML = `<div class="section-title">${section.title}</div>`;
             
             section.items.forEach((item, iIdx) => {
+                const itemId = `cb-${sIdx}-${iIdx}`;
+                const isChecked = checkedStatus[itemId] || false;
+                
                 const itemDiv = document.createElement('div');
-                itemDiv.className = 'item';
+                itemDiv.className = `item ${isChecked ? 'checked' : ''}`;
                 itemDiv.innerHTML = `
-                    <input type="checkbox" onchange="updateProgress()">
-                    <span>${item}</span>
+                    <div class="item-left" onclick="toggleItem('${itemId}', ${sIdx}, ${iIdx})">
+                        <input type="checkbox" id="${itemId}" ${isChecked ? 'checked' : ''}>
+                        <span>${item}</span>
+                    </div>
+                    <button class="btn-del" onclick="deleteItem(${sIdx}, ${iIdx})">×</button>
                 `;
-                itemDiv.onclick = function(e) {
-                    if(e.target.tagName !== 'INPUT') {
-                        const cb = this.querySelector('input');
-                        cb.checked = !cb.checked;
-                        updateProgress();
-                    }
-                    this.classList.toggle('checked', this.querySelector('input').checked);
-                };
                 secDiv.appendChild(itemDiv);
             });
 
-            // 新增按鈕區塊
             const addBox = document.createElement('div');
             addBox.className = 'add-box';
             addBox.innerHTML = `
-                <input type="text" placeholder="新增項目..." id="input-${sIdx}">
+                <input type="text" placeholder="新增..." id="input-${sIdx}">
                 <button onclick="addItem(${sIdx})">加入</button>
             `;
             secDiv.appendChild(addBox);
             container.appendChild(secDiv);
         });
         updateProgress();
+        saveData();
+    }
+
+    function toggleItem(id, sIdx, iIdx) {
+        checkedStatus[id] = !checkedStatus[id];
+        render();
     }
 
     function addItem(sIdx) {
         const input = document.getElementById(`input-${sIdx}`);
         if (input.value.trim() !== "") {
-            initialData[sIdx].items.push(input.value);
+            currentData[sIdx].items.push(input.value);
+            render();
+        }
+    }
+
+    function deleteItem(sIdx, iIdx) {
+        if(confirm('確定要刪除這項嗎？')) {
+            currentData[sIdx].items.splice(iIdx, 1);
+            // 重新整理勾選狀態，避免對位錯誤
+            const newStatus = {};
             render();
         }
     }
 
     function updateProgress() {
-        const total = document.querySelectorAll('input[type="checkbox"]').length;
-        const checked = document.querySelectorAll('input[type="checkbox"]:checked').length;
-        const percent = total === 0 ? 0 : (checked / total) * 100;
+        const total = currentData.reduce((sum, sec) => sum + sec.items.length, 0);
+        const checked = Object.keys(checkedStatus).filter(key => checkedStatus[key] === true).length;
+        // 修正邏輯：只計算目前存在的項目
+        let realChecked = 0;
+        currentData.forEach((sec, sIdx) => {
+            sec.items.forEach((item, iIdx) => {
+                if(checkedStatus[`cb-${sIdx}-${iIdx}`]) realChecked++;
+            });
+        });
+        
+        const percent = total === 0 ? 0 : Math.round((realChecked / total) * 100);
         document.getElementById('progress-bar').style.width = percent + '%';
+        document.getElementById('progress-percent').innerText = percent + '%';
+    }
+
+    function saveData() {
+        localStorage.setItem('au_checklist_data', JSON.stringify(currentData));
+        localStorage.setItem('au_checklist_status', JSON.stringify(checkedStatus));
+    }
+
+    function resetAll() {
+        if(confirm('將清單恢復到原始狀態？這會刪除你新增的項目。')) {
+            localStorage.clear();
+            currentData = JSON.parse(JSON.stringify(defaultData));
+            checkedStatus = {};
+            render();
+        }
     }
 
     render();
 </script>
-
 </body>
 </html>
